@@ -1,5 +1,8 @@
 "use client";
 
+import React, { useState } from "react";
+import { useSecureData } from "@/context/SecureDataContext";
+import { useRouter } from "next/navigation";
 import { GlowInput } from "@/components/GlowInput";
 
 export default function AuthGateway() {
