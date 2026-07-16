@@ -1,0 +1,21 @@
+# ReadyNest Analytics Engine — Git Ignore Rules
+
+# Environment files with real secrets
+.env
+.env.local
+.env.production
+
+# Python artifacts
+backend/venv/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/**/*.pyc
+backend/readynest.db
+
+# Node modules
+frontend/node_modules/
+frontend/.next/
+
+# OS files
+.DS_Store
+Thumbs.db

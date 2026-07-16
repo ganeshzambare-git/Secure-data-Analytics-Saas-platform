@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: readynest_db
+    restart: always
+    environment:
+      POSTGRES_DB: readynest
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: readynest_secure_db_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./backend/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    networks:
+      - secure_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: readynest_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - secure_network
+
+  backend:
+    build: ./backend
+    container_name: readynest_backend
+    restart: always
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:readynest_secure_db_pass@db:5432/readynest
+      - REDIS_URL=redis://redis:6379/0
+      - AES_SECRET_KEY=y3K9xP2wL4mN7qR1sT8uV5wX0zA3bC6d
+      - JWT_SECRET=super_secret_jwt_key_1029384756
+    depends_on:
+      - db
+      - redis
+    networks:
+      - secure_network
+
+  celery_worker:
+    build: ./backend
+    container_name: readynest_celery_worker
+    restart: always
+    command: celery -A app.tasks.celery_app.celery_app worker --loglevel=info
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql://postgres:readynest_secure_db_pass@db:5432/readynest
+      - REDIS_URL=redis://redis:6379/0
+      - AES_SECRET_KEY=y3K9xP2wL4mN7qR1sT8uV5wX0zA3bC6d
+      - JWT_SECRET=super_secret_jwt_key_1029384756
+    depends_on:
+      - db
+      - redis
+    networks:
+      - secure_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: readynest_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+      - NEXT_PUBLIC_AES_SECRET_KEY=y3K9xP2wL4mN7qR1sT8uV5wX0zA3bC6d
+    depends_on:
+      - backend
+    networks:
+      - secure_network
+
+volumes:
+  db_data:
+
+networks:
+  secure_network:
+    driver: bridge
