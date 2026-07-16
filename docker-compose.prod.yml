@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: readynest_prod_db
+    restart: always
+    environment:
+      POSTGRES_DB: readynest
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: readynest_secure_db_pass
+    volumes:
+      - db_prod_data:/var/lib/postgresql/data
+      - ./backend/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    # Port 5432 is isolated inside secure_private_net (no host ports exposed!)
+    networks:
+      - secure_private_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: readynest_prod_redis
+    restart: always
+    # Port 6379 is isolated inside secure_private_net (no host ports exposed!)
+    networks:
+      - secure_private_net
+
+  backend:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    container_name: readynest_prod_backend
+    restart: always
+    ports:
+      - "8000:8000"  # Unified public entrypoint
+    environment:
+      - DATABASE_URL=postgresql://postgres:readynest_secure_db_pass@db:5432/readynest
+      - REDIS_URL=redis://redis:6379/0
+      - AES_SECRET_KEY=y3K9xP2wL4mN7qR1sT8uV5wX0zA3bC6d
+      - JWT_SECRET=super_secret_jwt_key_1029384756
+      - PRODUCTION_MODE=true
+    depends_on:
+      - db
+      - redis
+    networks:
+      - gateway_net
+      - secure_private_net
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    container_name: readynest_prod_celery_worker
+    restart: always
+    command: celery -A app.services.celery_app.celery_app worker --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql://postgres:readynest_secure_db_pass@db:5432/readynest
+      - REDIS_URL=redis://redis:6379/0
+      - AES_SECRET_KEY=y3K9xP2wL4mN7qR1sT8uV5wX0zA3bC6d
+      - JWT_SECRET=super_secret_jwt_key_1029384756
+      - PRODUCTION_MODE=true
+    depends_on:
+      - db
+      - redis
+    networks:
+      - secure_private_net
+
+volumes:
+  db_prod_data:
+
+networks:
+  # Exposes the edge/gateway layer
+  gateway_net:
+    driver: bridge
+  # Private protected internal subnet
+  secure_private_net:
+    driver: bridge
+    internal: true  # Enforces complete traffic restriction to outside interfaces!

@@ -1,4 +1,5 @@
 import logging
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Header
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -36,7 +37,8 @@ def get_current_user(authorization: Optional[str] = Header(None), db: Session = 
     # Establish SQL Tenant Isolation Boundary
     set_tenant_context(db, tenant_id)
     
-    user = db.query(User).filter_by(id=user_id).first()
+    user_id_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+    user = db.query(User).filter_by(id=user_id_uuid).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -52,8 +54,10 @@ class ScrapeRequest(BaseModel):
 
 class TrainRequest(BaseModel):
     run_id: str = Field(..., description="Pipeline Run UUID")
-    model_type: str = Field("sklearn", description="Model framework: sklearn or xgboost")
-    split_ratio: float = Field(0.8, ge=0.5, le=0.9, description="Training split size ratio")
+    model_type: str = Field("sklearn_rf", description="Model framework type")
+    split_ratio: Optional[float] = Field(0.8, ge=0.5, le=0.9, description="Training split size ratio")
+    feature_columns: Optional[List[str]] = Field(default=["title_length", "has_number", "link_depth", "is_external"])
+    test_size: Optional[float] = Field(default=0.2, ge=0.05, le=0.95)
 
 class OnboardTenantRequest(BaseModel):
     company_name: str = Field(..., description="Corporate organization name")
@@ -109,11 +113,13 @@ def fit_model(
     try:
         # Run ML training algorithm task synchronously
         metrics = train_ml_model(
-            str(current_user.tenant_id),
-            str(current_user.id),
-            payload.run_id,
-            payload.model_type,
-            payload.split_ratio
+            tenant_id=str(current_user.tenant_id),
+            triggered_by_id=str(current_user.id),
+            run_id=payload.run_id,
+            model_type=payload.model_type,
+            split_ratio=payload.split_ratio if payload.split_ratio is not None else (1.0 - (payload.test_size or 0.2)),
+            feature_columns=payload.feature_columns,
+            test_size=payload.test_size if payload.test_size is not None else (1.0 - (payload.split_ratio or 0.8))
         )
         return {"success": True, "metrics": metrics}
     except Exception as e:
@@ -211,7 +217,8 @@ def toggle_tenant(
             detail="Requires System Administrator authorization privilege."
         )
         
-    tenant = db.query(Tenant).filter_by(id=tenant_id).first()
+    tenant_id_uuid = uuid.UUID(tenant_id) if isinstance(tenant_id, str) else tenant_id
+    tenant = db.query(Tenant).filter_by(id=tenant_id_uuid).first()
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant block not found.")
         

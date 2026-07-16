@@ -1,170 +1,132 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+/**
+ * SecureDataContext.tsx — Unified Secure Data Provider
+ * ReadyNest Analytics Engine — Phase 3
+ *
+ * Orchestrates:
+ *  - Auth state (via AuthContext)
+ *  - AES-256-GCM decryption (via DecryptionContext)
+ *  - Secure API request wrapper that transparently decrypts {"payload":"<hex>"}
+ *  - Tenant resolution & login flows
+ */
 
-interface AuthState {
-  token: string | null;
-  role: "admin" | "analyst" | null;
-  username: string | null;
-  tenantId: string | null;
-  companyName: string | null;
-}
+import React, { createContext, useContext, useCallback } from "react";
+import { useAuth, AuthState } from "./AuthContext";
+import { useDecryption } from "./DecryptionContext";
+
+// ── Types ─────────────────────────────────────────────────────────────
 
 interface SecureDataContextType {
   auth: AuthState;
   loading: boolean;
-  resolveTenant: (companyName: string) => Promise<{ exists: boolean; tenantId?: string; companyName?: string }>;
-  login: (tenantId: string, username: string, password: string, role: "admin" | "analyst") => Promise<boolean>;
+  resolveTenant: (orgName: string) => Promise<{
+    resolved: boolean;
+    tenantId?: string;
+    companyName?: string;
+  }>;
+  login: (
+    tenantId: string,
+    username: string,
+    password: string,
+    role: "admin" | "analyst"
+  ) => Promise<boolean>;
   logout: () => void;
   secureRequest: <T>(url: string, options?: RequestInit) => Promise<T>;
 }
 
-const SecureDataContext = createContext<SecureDataContextType | undefined>(undefined);
+const SecureDataContext = createContext<SecureDataContextType | undefined>(
+  undefined
+);
 
-const AES_KEY_STRING = process.env.NEXT_PUBLIC_AES_SECRET_KEY || "y3K9xP2wL4mN7qR1sT8uV5wX0zA3bC6d";
+// ── Provider ──────────────────────────────────────────────────────────
 
-export const SecureDataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [auth, setAuth] = useState<AuthState>({
-    token: null,
-    role: null,
-    username: null,
-    tenantId: null,
-    companyName: null,
-  });
-  const [loading, setLoading] = useState(true);
-  const router = useRouter();
+export const SecureDataProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const { auth, loading, setAuth, logout } = useAuth();
+  const { decryptPayload } = useDecryption();
 
-  // Load auth state from sessionStorage (tab-isolated context protection)
-  useEffect(() => {
-    const stored = sessionStorage.getItem("readynest_session");
-    if (stored) {
-      try {
-        setAuth(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to parse stored session", e);
+  // ── Secure API request wrapper ─────────────────────────────────────
+
+  const secureRequest = useCallback(
+    async <T,>(url: string, options: RequestInit = {}): Promise<T> => {
+      const apiUrl =
+        process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const targetUrl = url.startsWith("http") ? url : `${apiUrl}${url}`;
+
+      // Attach auth headers
+      const headers = new Headers(options.headers || {});
+      if (auth.token) {
+        headers.set("Authorization", `Bearer ${auth.token}`);
       }
-    }
-    setLoading(false);
-  }, []);
-
-  // Web Crypto helper to decrypt AES-256-GCM data stream in-memory
-  const decryptPayload = async (base64Ciphertext: string): Promise<string> => {
-    try {
-      // Decode base64 to Uint8Array
-      const binaryString = window.atob(base64Ciphertext);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
+      if (!headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
       }
 
-      // Extract IV (12 bytes) and data payload
-      const iv = bytes.slice(0, 12);
-      const data = bytes.slice(12);
+      const response = await fetch(targetUrl, { ...options, headers });
 
-      // Prepare Key
-      const keyEncoder = new TextEncoder();
-      let keyBytes = keyEncoder.encode(AES_KEY_STRING);
-      
-      // Ensure key length is exactly 32 bytes
-      if (keyBytes.length < 32) {
-        const padded = new Uint8Array(32);
-        padded.set(keyBytes);
-        keyBytes = padded;
-      } else if (keyBytes.length > 32) {
-        keyBytes = keyBytes.slice(0, 32);
+      // Auto-logout on 401 (except during login itself)
+      if (response.status === 401 && url !== "/api/v1/auth/token") {
+        logout();
+        throw new Error("Session expired. Re-authentication required.");
       }
 
-      const cryptoKey = await window.crypto.subtle.importKey(
-        "raw",
-        keyBytes,
-        { name: "AES-GCM" },
-        false,
-        ["decrypt"]
-      );
+      const json = await response.json();
 
-      // Decrypt
-      const decryptedBuf = await window.crypto.subtle.decrypt(
-        {
-          name: "AES-GCM",
-          iv: iv
-        },
-        cryptoKey,
-        data
-      );
-
-      return new TextDecoder().decode(decryptedBuf);
-    } catch (err) {
-      console.error("Web Crypto Decryption Failed:", err);
-      throw new Error("Client network stream verification failure.");
-    }
-  };
-
-  // Secure API requests that intercept ciphertext responses
-  const secureRequest = async <T,>(url: string, options: RequestInit = {}): Promise<T> => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const targetUrl = url.startsWith("http") ? url : `${apiUrl}${url}`;
-
-    // Add Authorization Headers
-    const headers = new Headers(options.headers || {});
-    if (auth.token) {
-      headers.set("Authorization", `Bearer ${auth.token}`);
-    }
-    if (!headers.has("Content-Type")) {
-      headers.set("Content-Type", "application/json");
-    }
-
-    const updatedOptions = {
-      ...options,
-      headers,
-    };
-
-    const response = await fetch(targetUrl, updatedOptions);
-
-    if (response.status === 401 && url !== "/api/v1/auth/token") {
-      logout();
-      throw new Error("Session expired. Re-authentication required.");
-    }
-
-    const json = await response.json();
-
-    if (!response.ok) {
-      // If error payload is encrypted, decrypt it
-      if (json && json.ciphertext) {
-        const decryptedText = await decryptPayload(json.ciphertext);
-        const parsedErr = JSON.parse(decryptedText);
-        throw new Error(parsedErr.detail || "System request failure.");
+      if (!response.ok) {
+        // Error payload may also be encrypted
+        if (json?.payload) {
+          const decrypted = (await decryptPayload(json.payload)) as Record<string, unknown>;
+          throw new Error(
+            (decrypted.detail as string) || "System request failure."
+          );
+        }
+        throw new Error(json.detail || "Network connection failure.");
       }
-      throw new Error(json.detail || "Network connection failure.");
-    }
 
-    if (!json || !json.ciphertext) {
-      throw new Error("Zero-Trust integrity check failed: missing network response shielding.");
-    }
+      // Expect ALL /api/v1/* responses to arrive as {"payload": "<hex>"}
+      if (!json?.payload) {
+        throw new Error(
+          "Zero-Trust integrity check failed: missing network response shielding."
+        );
+      }
 
-    // Decrypt in-memory
-    const decryptedText = await decryptPayload(json.ciphertext);
-    return JSON.parse(decryptedText) as T;
-  };
+      return (await decryptPayload(json.payload)) as T;
+    },
+    [auth.token, decryptPayload, logout]
+  );
 
-  const resolveTenant = async (companyName: string) => {
-    const res = await secureRequest<{ exists: boolean; tenant_id?: string; company_name?: string }>(
-      "/api/v1/auth/tenant-resolve",
-      {
+  // ── Tenant resolution ──────────────────────────────────────────────
+
+  const resolveTenant = useCallback(
+    async (orgName: string) => {
+      const res = await secureRequest<{
+        resolved: boolean;
+        tenant_id?: string;
+        company_name?: string;
+      }>("/api/v1/auth/tenant-resolve", {
         method: "POST",
-        body: JSON.stringify({ company_name: companyName }),
-      }
-    );
-    return {
-      exists: res.exists,
-      tenantId: res.tenant_id,
-      companyName: res.company_name,
-    };
-  };
+        body: JSON.stringify({ organization_name: orgName }),
+      });
+      return {
+        resolved: res.resolved,
+        tenantId: res.tenant_id,
+        companyName: res.company_name,
+      };
+    },
+    [secureRequest]
+  );
 
-  const login = async (tenantId: string, username: string, password: string, role: "admin" | "analyst") => {
-    try {
+  // ── Login ──────────────────────────────────────────────────────────
+
+  const login = useCallback(
+    async (
+      tenantId: string,
+      username: string,
+      password: string,
+      role: "admin" | "analyst"
+    ) => {
       const res = await secureRequest<{
         access_token: string;
         token_type: string;
@@ -176,8 +138,7 @@ export const SecureDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         body: JSON.stringify({ tenant_id: tenantId, username, password, role }),
       });
 
-      // Get corporate detail from session state
-      const targetSession: AuthState = {
+      const session: AuthState = {
         token: res.access_token,
         role: res.role,
         username: res.username,
@@ -185,38 +146,29 @@ export const SecureDataProvider: React.FC<{ children: React.ReactNode }> = ({ ch
         companyName: auth.companyName || "Organization",
       };
 
-      setAuth(targetSession);
-      sessionStorage.setItem("readynest_session", JSON.stringify(targetSession));
+      setAuth(session);
       return true;
-    } catch (e) {
-      console.error("Login attempt failure:", e);
-      throw e;
-    }
-  };
-
-  const logout = () => {
-    setAuth({
-      token: null,
-      role: null,
-      username: null,
-      tenantId: null,
-      companyName: null,
-    });
-    sessionStorage.removeItem("readynest_session");
-    router.push("/");
-  };
+    },
+    [auth.companyName, secureRequest, setAuth]
+  );
 
   return (
-    <SecureDataContext.Provider value={{ auth, loading, resolveTenant, login, logout, secureRequest }}>
+    <SecureDataContext.Provider
+      value={{ auth, loading, resolveTenant, login, logout, secureRequest }}
+    >
       {children}
     </SecureDataContext.Provider>
   );
 };
 
-export const useSecureData = () => {
-  const context = useContext(SecureDataContext);
-  if (!context) {
-    throw new Error("useSecureData must be executed inside a SecureDataProvider context wrapper.");
+// ── Hook ──────────────────────────────────────────────────────────────
+
+export const useSecureData = (): SecureDataContextType => {
+  const ctx = useContext(SecureDataContext);
+  if (!ctx) {
+    throw new Error(
+      "useSecureData must be used within a SecureDataProvider context wrapper."
+    );
   }
-  return context;
+  return ctx;
 };

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { SecureDataProvider } from "@/context/SecureDataContext";
 import React from "react";
+import { ClientShellWrapper } from "./ClientShellWrapper";
 
 export const metadata: Metadata = {
   title: "ReadyNest Analytics Engine",
@@ -26,12 +26,13 @@ export default function RootLayout({
                   e.preventDefault();
                 });
 
-                // Disable Keyboard Shortcuts (F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+Shift+C, Ctrl+U)
+                // Disable Keyboard Shortcuts (F12, Ctrl+Shift+I/J/C, Ctrl+U, Cmd+Opt+I)
                 document.addEventListener('keydown', (e) => {
                   if (
                     e.key === 'F12' ||
                     (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-                    (e.ctrlKey && e.key === 'u')
+                    (e.ctrlKey && e.key === 'u') ||
+                    (e.metaKey && e.altKey && e.key === 'I')
                   ) {
                     e.preventDefault();
                   }
@@ -42,9 +43,7 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <SecureDataProvider>
-          {children}
-        </SecureDataProvider>
+        <ClientShellWrapper>{children}</ClientShellWrapper>
       </body>
     </html>
   );

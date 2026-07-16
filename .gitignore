@@ -11,6 +11,13 @@ backend/__pycache__/
 backend/**/__pycache__/
 backend/**/*.pyc
 backend/readynest.db
+readynest.db
+backend/test_report.pdf
+backend/test_mirror.py
+backend/scratch_debug.py
+backend/scratch_pdf.py
+backend/scratch_init_neon.py
+backend/app/services/.mirror_state
 
 # Node modules
 frontend/node_modules/
