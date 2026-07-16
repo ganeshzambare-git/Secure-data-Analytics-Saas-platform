@@ -2,8 +2,9 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.db import SessionLocal, Tenant, User, PipelineRun, set_tenant_context, Base, engine, use_sqlite
-from app.security import hash_password
+from app.core.db import SessionLocal, set_tenant_context, engine, use_sqlite
+from app.models import Tenant, User, PipelineRun, Base
+from app.core.security import hash_password
 
 
 def _bypass(db: Session):

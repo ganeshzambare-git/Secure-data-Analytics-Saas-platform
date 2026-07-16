@@ -1,6 +1,6 @@
 import pytest
 import datetime
-from app.security import (
+from app.core.security import (
     hash_password,
     verify_password,
     encrypt_payload,
@@ -8,7 +8,7 @@ from app.security import (
     create_access_token,
     verify_token
 )
-from app.config import settings
+from app.core.config import settings
 
 def test_password_hashing():
     password = "SuperSecurePassword123!"

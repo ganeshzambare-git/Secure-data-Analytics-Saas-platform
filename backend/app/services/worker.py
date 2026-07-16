@@ -38,11 +38,12 @@ try:
 except ImportError:
     xgb = None  # type: ignore
 
-from app.db import SessionLocal, PipelineRun, Tenant, User, SystemAuditLog, set_tenant_context
-from app.tasks.celery_app import celery_app
-from app.security import encrypt_payload, decrypt_payload
+from app.core.db import SessionLocal, set_tenant_context
+from app.models import PipelineRun, Tenant, User, SystemAuditLog
+from app.services.celery_app import celery_app
+from app.core.security import encrypt_payload, decrypt_payload
 
-@celery_app.task(name="app.tasks.worker.execute_scraping_and_etl")
+@celery_app.task(name="app.services.worker.execute_scraping_and_etl")
 def execute_scraping_and_etl(tenant_id: str, triggered_by_id: str, target_url: str) -> str:
     """
     Asynchronous task that scrapes a URL, cleans data with Pandas, 
@@ -148,7 +149,7 @@ def execute_scraping_and_etl(tenant_id: str, triggered_by_id: str, target_url: s
     finally:
         db.close()
 
-@celery_app.task(name="app.tasks.worker.train_ml_model")
+@celery_app.task(name="app.services.worker.train_ml_model")
 def train_ml_model(tenant_id: str, triggered_by_id: str, run_id: str, model_type: str, split_ratio: float) -> dict:
     """
     Asynchronous task that decrypts a pipeline dataset, splits features, 
@@ -213,7 +214,6 @@ def train_ml_model(tenant_id: str, triggered_by_id: str, run_id: str, model_type
         db.commit()
         
         # Log Audit Record
-        from app.db import SystemAuditLog
         audit = SystemAuditLog(
             tenant_id=tenant_id,
             user_id=triggered_by_id,

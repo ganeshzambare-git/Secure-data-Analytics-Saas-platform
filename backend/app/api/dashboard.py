@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 import datetime
 
-from app.db import get_db, PipelineRun, User
-from app.routes.pipeline import get_current_user
+from app.core.db import get_db
+from app.models import PipelineRun, User
+from app.api.pipeline import get_current_user
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["Dashboard SSR Visuals"])
 

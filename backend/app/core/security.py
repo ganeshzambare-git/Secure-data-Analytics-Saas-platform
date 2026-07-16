@@ -4,7 +4,7 @@ import datetime
 from typing import Optional
 import jwt
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
-from app.config import settings
+from app.core.config import settings
 
 # --- Password Hashing Logic ---
 # To keep implementation dependency overhead low and performant, 

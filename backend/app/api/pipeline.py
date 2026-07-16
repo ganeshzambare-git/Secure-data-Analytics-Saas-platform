@@ -6,9 +6,10 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 import datetime
 
-from app.db import get_db, PipelineRun, SystemAuditLog, Tenant, User, set_tenant_context
-from app.security import verify_token, hash_password
-from app.tasks.worker import execute_scraping_and_etl, train_ml_model
+from app.core.db import get_db, set_tenant_context
+from app.models import PipelineRun, SystemAuditLog, Tenant, User
+from app.core.security import verify_token, hash_password
+from app.services.worker import execute_scraping_and_etl, train_ml_model
 
 router = APIRouter(prefix="/api/v1/pipeline", tags=["Data Pipelines"])
 
@@ -238,77 +239,22 @@ def list_system_audit_logs(current_user: User = Depends(get_current_user), db: S
         )
         
     # Since the request is from a global administrator, we want to fetch all logs.
-    # To bypass RLS and read logs from all tenants, we can query them without using RLS restrictions,
-    # or by executing a raw SQL query as the superuser database session.
-    # To do this safely and cleanly, we can temporarily disable the tenant ID constraint by setting 
-    # the tenant context in the active connection session to allow querying or setting a local bypass value.
-    # Wait, our RLS policies on audit logs check: USING (tenant_id = current_setting('app.current_tenant_id'))
-    # If the user is admin, they belong to an admin tenant. If we want to retrieve all rows,
-    # we can run a session query that disables row-level security or uses a raw connection bypass:
-    # In PostgreSQL, RLS is bypassed for the table owner (which is the 'postgres' user, the credentials we log in with in SQLAlchemy!).
-    # Wait! RLS policies DO NOT apply to the table owner unless RLS is enabled FORCEFULLY using:
-    # ALTER TABLE system_audit_logs FORCE ROW LEVEL SECURITY;
-    # But in our `init_db.sql` we executed:
-    # ALTER TABLE system_audit_logs ENABLE ROW LEVEL SECURITY;
-    # We did NOT run FORCE.
-    # In PostgreSQL, by default, the database owner/superuser is EXEMPT from RLS unless FORCE is turned on!
-    # However, to be extremely secure and follow RLS explicitly, what if we want to run the query by supplying a bypass,
-    # or since PostgreSQL superuser automatically bypasses it, we can query the logs?
-    # Wait, let's see. If the session has set `app.current_tenant_id` to `current_user.tenant_id`, does the query filter by it?
-    # Yes, because the policy is evaluated as: `tenant_id = current_setting('app.current_tenant_id')`.
-    # To bypass it, we can temporarily clear the setting:
-    # db.execute(text("SET LOCAL app.current_tenant_id = ''"))
-    # Wait! If `app.current_tenant_id` is set to an empty string `''`, the check:
-    # `USING (tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)`
-    # will evaluate to `tenant_id = NULL::uuid`, which is false, so it will yield NO rows.
-    # If we want the admin to see all logs, we can write a raw query where we temporarily disable RLS for this transaction,
-    # or run a query that queries the logs database table.
-    # Wait, since the database user is `postgres` (superuser), let's look at how PostgreSQL handles it.
-    # If the policy is enabled, is it checked?
-    # Yes, if `ENABLE ROW LEVEL SECURITY` is set, RLS is active for non-owners. But for the owner (postgres), it is BYPASSED by default,
-    # EXCEPT when we explicitly set session settings that we query with.
-    # Wait, if we execute:
-    # SELECT system_audit_logs.*, tenants.company_name, users.username 
-    # FROM system_audit_logs 
-    # JOIN tenants ON system_audit_logs.tenant_id = tenants.id
-    # JOIN users ON system_audit_logs.user_id = users.id
-    # Since `postgres` bypasses RLS, if `app.current_tenant_id` is set, does the policy still restrict the query?
-    # Since the owner bypasses RLS entirely, the policy condition is NOT even evaluated for queries run by `postgres`!
-    # So if SQLAlchemy connects as `postgres` (which it does in our docker-compose: `postgres:readynest_secure_db_pass`),
-    # it bypasses RLS entirely by default.
-    # Wait, if it bypasses it entirely, how do we enforce RLS for standard analysts?
-    # RLS policies apply to standard roles, but if we connect as the superuser `postgres`, RLS is bypassed UNLESS we configure the policy with `FORCE ROW LEVEL SECURITY`.
-    # Wait! In production databases, the application connects using a dedicated database role (e.g. `readynest_app`) which is a non-owner role,
-    # ensuring that RLS is strictly enforced for it, while database migration tools connect as `postgres`.
-    # To simulate this or make sure RLS works even when connecting as `postgres`, we should enable `FORCE ROW LEVEL SECURITY` on the tables,
-    # and then design the policy to bypass RLS for admins using `app.bypass_rls`.
-    # Let's check. Yes! That is a very robust, enterprise-grade way to handle it!
-    # If we run:
-    # `ALTER TABLE users FORCE ROW LEVEL SECURITY;`
-    # `ALTER TABLE pipeline_runs FORCE ROW LEVEL SECURITY;`
-    # `ALTER TABLE system_audit_logs FORCE ROW LEVEL SECURITY;`
-    # Then RLS is forced even for the table owner/superuser (`postgres`).
-    # And we update the policy to:
-    # `USING (current_setting('app.bypass_rls', true) = 'true' OR tenant_id = NULLIF(current_setting('app.current_tenant_id', true), '')::uuid)`
-    # This is incredibly clever! Let's update `init_db.sql` to implement this. It is a brilliant detail.
-    # Let's check how `list_system_audit_logs` in `pipeline.py` will run:
-    # ```python
-    # db.execute(text("SET LOCAL app.bypass_rls = 'true'"))
-    # logs = db.query(SystemAuditLog).all()
-    # ```
-    # This is perfect! Let's write this implementation into `pipeline.py`.
-    # Let's check the fields of `SystemAuditLog` model: `tenant_id`, `user_id`, `action_performed`, `ip_address`, `timestamp`.
-    # We can join with `Tenant` and `User` to return nice human-readable names.
-    # Let's do that!
-    # ```python
-    # db.execute(text("SET LOCAL app.bypass_rls = 'true'"))
-    # query = db.query(SystemAuditLog, Tenant.company_name, User.username)\
-    #           .join(Tenant, SystemAuditLog.tenant_id == Tenant.id)\
-    #           .join(User, SystemAuditLog.user_id == User.id)\
-    #           .order_by(SystemAuditLog.timestamp.desc())
-    # ```
-    # This is amazing and exactly matches what `SystemAdminDeck` expects:
-    # `id`, `company_name`, `username`, `action_performed`, `ip_address`, `timestamp`.
-    # Let's write `pipeline.py` with these features.
+    db.execute(text("SET LOCAL app.bypass_rls = 'true'"))
     
-    # Wait, let's write it now!
+    query = db.query(SystemAuditLog, Tenant.company_name, User.username)\
+              .join(Tenant, SystemAuditLog.tenant_id == Tenant.id)\
+              .join(User, SystemAuditLog.user_id == User.id)\
+              .order_by(SystemAuditLog.timestamp.desc())\
+              .all()
+              
+    return [
+        {
+            "id": str(log.id),
+            "company_name": company_name,
+            "username": username,
+            "action_performed": log.action_performed,
+            "ip_address": log.ip_address,
+            "timestamp": log.timestamp.isoformat()
+        }
+        for log, company_name, username in query
+    ]

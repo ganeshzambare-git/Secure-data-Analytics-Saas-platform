@@ -2,9 +2,9 @@ import json
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.routes import auth, pipeline, dashboard
-from app.db import seed_database
-from app.security import encrypt_payload
+from app.api import auth, pipeline, dashboard
+from app.core.db import seed_database
+from app.core.security import encrypt_payload
 
 app = FastAPI(
     title="ReadyNest Analytics Engine",

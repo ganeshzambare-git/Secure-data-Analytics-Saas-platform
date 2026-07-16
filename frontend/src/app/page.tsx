@@ -1,8 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { useSecureData } from "@/context/SecureDataContext";
-import { useRouter } from "next/navigation";
+import { GlowInput } from "@/components/GlowInput";
 
 export default function AuthGateway() {
   const { resolveTenant, login, auth } = useSecureData();
@@ -126,25 +124,14 @@ export default function AuthGateway() {
 
         {step === 1 ? (
           <form onSubmit={handleResolve} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "12px",
-                color: "var(--text-primary)",
-                textTransform: "uppercase"
-              }}>
-                1. Organization Name
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Acme Corp"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                disabled={loading}
-                className="glow-input"
-                required
-              />
-            </div>
+            <GlowInput
+              label="1. Organization Name"
+              placeholder="e.g. Acme Corp"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              disabled={loading}
+              required
+            />
 
             <button
               type="submit"
@@ -197,45 +184,24 @@ export default function AuthGateway() {
               </select>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "12px",
-                color: "var(--text-primary)",
-                textTransform: "uppercase"
-              }}>
-                3. Username
-              </label>
-              <input
-                type="text"
-                placeholder="Username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={loading}
-                className="glow-input"
-                required
-              />
-            </div>
+            <GlowInput
+              label="3. Username"
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              disabled={loading}
+              required
+            />
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              <label style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "12px",
-                color: "var(--text-primary)",
-                textTransform: "uppercase"
-              }}>
-                4. Password
-              </label>
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
-                className="glow-input"
-                required
-              />
-            </div>
+            <GlowInput
+              label="4. Password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              required
+            />
 
             <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
               <button
@@ -262,3 +228,5 @@ export default function AuthGateway() {
     </div>
   );
 }
+
+

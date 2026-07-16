@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
-from app.db import get_db, Tenant, User, set_tenant_context
-from app.security import verify_password, create_access_token
+
+from app.core.db import get_db, set_tenant_context
+from app.models import Tenant, User
+from app.core.security import verify_password, create_access_token
 
 router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 

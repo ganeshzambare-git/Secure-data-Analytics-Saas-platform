@@ -13,6 +13,11 @@
   --font-sans: 'Inter', sans-serif;
   --shadow-neon: 0 0 10px rgba(0, 230, 118, 0.25);
   --shadow-neon-hover: 0 0 15px rgba(0, 230, 118, 0.4);
+  
+  /* Typography Scale Tokens */
+  --font-size-hero: 24pt;
+  --font-size-workspace: 14pt;
+  --font-size-data-grid: 9.5pt;
 }
 
 * {
@@ -175,3 +180,23 @@ code, pre, .terminal-text {
   color: var(--accent-teal);
   border: 1px solid rgba(49, 151, 149, 0.3);
 }
+
+/* Typography Utility Classes */
+.text-hero {
+  font-size: var(--font-size-hero);
+  font-weight: 700;
+  font-family: var(--font-sans);
+}
+
+.text-workspace {
+  font-size: var(--font-size-workspace);
+  font-weight: 500;
+  font-family: var(--font-sans);
+}
+
+.text-data-grid {
+  font-size: var(--font-size-data-grid);
+  font-weight: 400;
+  font-family: var(--font-mono);
+}
+

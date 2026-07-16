@@ -1,70 +1,31 @@
-from sqlalchemy import create_engine, text, Column, String, Boolean, DateTime, ForeignKey, LargeBinary, event
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import sessionmaker, declarative_base, Session
-import datetime
+from sqlalchemy import create_engine, text, event
+from sqlalchemy.orm import sessionmaker, Session
 import os
-from app.config import settings
+import uuid
+import datetime
+
+from app.core.config import settings
+from app.models import Base, Tenant, User, PipelineRun, SystemAuditLog
 
 # --- Initialize Engine with SQLite Fallback ---
-# Check if PostgreSQL connection details are valid/reachable. If not, fallback to SQLite.
 use_sqlite = False
 try:
-    # Try connecting to Postgres with a short timeout
     engine = create_engine(settings.DATABASE_URL, pool_pre_ping=True, connect_args={"connect_timeout": 3})
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
 except Exception as e:
     print(f"PostgreSQL connection failed: {e}. Falling back to SQLite for local development and testing.")
     use_sqlite = True
-    db_file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "readynest.db")
+    db_file_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), 
+        "readynest.db"
+    )
     settings.DATABASE_URL = f"sqlite:///{db_file_path}"
     engine = create_engine(settings.DATABASE_URL, connect_args={"check_same_thread": False})
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
-# --- SQLAlchemy Models ---
-
-class Tenant(Base):
-    __tablename__ = "tenants"
-    # To support both PostgreSQL and SQLite, use String(36) or UUID fields
-    id = Column(String(36), primary_key=True, default=lambda: str(datetime.uuid.uuid4()) if hasattr(datetime, 'uuid') else None)
-    company_name = Column(String(255), nullable=False, unique=True)
-    is_active = Column(Boolean, default=True, nullable=False)
-    created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
-
-class User(Base):
-    __tablename__ = "users"
-    id = Column(String(36), primary_key=True)
-    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    username = Column(String(100), nullable=False)
-    password_hash = Column(String(255), nullable=False)
-    role = Column(String(50), nullable=False) # 'admin', 'analyst'
-    created_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
-
-class PipelineRun(Base):
-    __tablename__ = "pipeline_runs"
-    id = Column(String(36), primary_key=True)
-    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    triggered_by = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    target_url = Column(String, nullable=False)
-    status = Column(String(50), nullable=False)
-    encrypted_dataset_payload = Column(LargeBinary, nullable=True)
-    # Use JSONB for Postgres, JSON String fallback for SQLite
-    metrics = Column(JSONB if not use_sqlite else String, nullable=True)
-    updated_at = Column(DateTime(timezone=True), default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
-
-class SystemAuditLog(Base):
-    __tablename__ = "system_audit_logs"
-    id = Column(String(36), primary_key=True)
-    tenant_id = Column(String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
-    user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    action_performed = Column(String(255), nullable=False)
-    ip_address = Column(String(45), nullable=False)
-    timestamp = Column(DateTime(timezone=True), default=datetime.datetime.utcnow)
-
-# Ensure fallback IDs are generated properly using python standard uuid
-import uuid
+# --- Dynamic UUID Generator Hook ---
 for model_cls in [Tenant, User, PipelineRun, SystemAuditLog]:
     @event.listens_for(model_cls, 'before_insert')
     def ensure_uuid_id(mapper, connection, target):
@@ -72,9 +33,6 @@ for model_cls in [Tenant, User, PipelineRun, SystemAuditLog]:
             target.id = str(uuid.uuid4())
 
 # --- SQLite Row-Level Security Emulator ---
-# If we fall back to SQLite, SQLite doesn't natively enforce RLS. We intercept ORM queries
-# and append a tenant_id check automatically to guarantee multi-tenant row isolation.
-
 @event.listens_for(Session, "before_flush")
 def enforce_sqlite_rls_flush(session, flush_context, instances):
     if "sqlite" not in str(session.get_bind().url):
@@ -130,10 +88,6 @@ def get_db():
         db.close()
 
 def set_tenant_context(db: Session, tenant_id: str):
-    """
-    Sets the local session variable app.current_tenant_id inside the active database transaction.
-    This parameter is consumed by PostgreSQL Row Level Security (RLS) policies.
-    """
     if "sqlite" in str(db.get_bind().url):
         db.info["current_tenant_id"] = str(tenant_id) if tenant_id else None
         db.info["bypass_rls"] = False
@@ -141,17 +95,15 @@ def set_tenant_context(db: Session, tenant_id: str):
         db.execute(text("SET LOCAL app.bypass_rls = 'false'"))
         db.execute(text("SET LOCAL app.current_tenant_id = :tenant_id"), {"tenant_id": str(tenant_id)})
 
-# --- Database Seeder function ---
+# --- Database Seeder Utility ---
 def seed_database():
-    from app.security import hash_password
+    from app.core.security import hash_password
     
-    # If SQLite, initialize the schema metadata
     if use_sqlite:
         Base.metadata.create_all(bind=engine)
         
     db = SessionLocal()
     try:
-        # Bypass RLS check during database setup
         if use_sqlite:
             db.info["bypass_rls"] = True
         else:
@@ -179,7 +131,6 @@ def seed_database():
             db.commit()
             
             # 3. Create users
-            # User admin_acme
             admin_acme = User(
                 id="11111111-1111-1111-1111-111111111111",
                 tenant_id=acme_tenant.id,
@@ -187,8 +138,6 @@ def seed_database():
                 password_hash=hash_password("password123"),
                 role="admin"
             )
-            
-            # User analyst_acme
             analyst_acme = User(
                 id="11111111-1111-1111-1111-111111111112",
                 tenant_id=acme_tenant.id,
@@ -196,8 +145,6 @@ def seed_database():
                 password_hash=hash_password("password123"),
                 role="analyst"
             )
-
-            # User admin_globex
             admin_globex = User(
                 id="22222222-2222-2222-2222-222222222221",
                 tenant_id=globex_tenant.id,
@@ -205,8 +152,6 @@ def seed_database():
                 password_hash=hash_password("password123"),
                 role="admin"
             )
-
-            # User analyst_globex
             analyst_globex = User(
                 id="22222222-2222-2222-2222-222222222222",
                 tenant_id=globex_tenant.id,
