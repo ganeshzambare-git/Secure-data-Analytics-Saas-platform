@@ -9,11 +9,12 @@ from app.api.pipeline import get_current_user
 
 router = APIRouter(prefix="/api/v1/dashboard", tags=["Dashboard SSR Visuals"])
 
+import plotly.graph_objects as go
+
 def generate_ssr_svg_chart(metrics: dict) -> str:
     """
     Programmatic SSR SVG compiler that returns a high-fidelity vector chart.
-    Ensures zero third-party C library dependency failures (like kaleido/orca)
-    while matching the Cyber-Secure Dark Terminal Theme.
+    Uses Plotly for backend SVG rendering, maintaining Zero-Trust limits.
     """
     model_name = metrics.get("model_name", "N/A")
     accuracy = metrics.get("accuracy", 0.0)
@@ -21,54 +22,67 @@ def generate_ssr_svg_chart(metrics: dict) -> str:
     split_ratio = metrics.get("split_ratio", 0.8)
     rows_scraped = metrics.get("rows_scraped", 0)
     
-    # Calculate dimensions
-    width = 600
-    height = 300
+    fig = go.Figure()
+
+    # R2 Score
+    fig.add_trace(go.Bar(
+        y=["R² Score "],
+        x=[accuracy],
+        orientation='h',
+        marker=dict(color="#00E676"),
+        text=[f"{accuracy:.4f}"],
+        textposition="auto"
+    ))
+
+    # RMSE
+    fig.add_trace(go.Bar(
+        y=["RMSE "],
+        x=[rmse],
+        orientation='h',
+        marker=dict(color="#f6ad55"),
+        text=[f"{rmse:.4f}"],
+        textposition="auto"
+    ))
+
+    # Train Split
+    fig.add_trace(go.Bar(
+        y=["Data Split "],
+        x=[split_ratio],
+        orientation='h',
+        marker=dict(color="#319795"),
+        text=[f"Train: {split_ratio*100:.0f}%"],
+        textposition="auto"
+    ))
     
-    # Accuracy percentage mapping
-    acc_percent = min(max(accuracy * 100, 0), 100)
-    acc_bar_width = int(acc_percent * 4) # max 400px
-    
-    # Train-test split calculation
-    train_width = int(400 * split_ratio)
-    test_width = 400 - train_width
-    
-    svg = f"""<svg width="100%" height="100%" viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" style="background-color: #0D1B13; border-radius: 4px; border: 1px solid #1A3326; font-family: 'JetBrains Mono', 'Fira Code', monospace;">
-        <!-- Header -->
-        <text x="20" y="35" fill="#00E676" font-size="14" font-weight="bold" letter-spacing="1">[ ReadyNest Engine Telemetry SSR Plot ]</text>
-        <text x="20" y="55" fill="#718096" font-size="11">Model: {model_name} (Training Size: {rows_scraped} rows)</text>
-        
-        <!-- Grid Matrix Lines -->
-        <line x1="20" y1="75" x2="{width - 20}" y2="75" stroke="#1A3326" stroke-width="1" />
-        
-        <!-- Metric 1: R2 Fit Accuracy -->
-        <text x="20" y="105" fill="#E2E8F0" font-size="12">R² Accuracy Fit (R2 Score):</text>
-        <text x="440" y="105" fill="#00E676" font-size="13" font-weight="bold">{accuracy:.4f}</text>
-        
-        <rect x="20" y="115" width="400" height="15" fill="#020805" rx="3" stroke="#1A3326" />
-        <rect x="20" y="115" width="{acc_bar_width}" height="15" fill="#00E676" rx="3" />
-        
-        <!-- Metric 2: RMSE -->
-        <text x="20" y="165" fill="#E2E8F0" font-size="12">Root Mean Squared Error (RMSE):</text>
-        <text x="440" y="165" fill="#f6ad55" font-size="13" font-weight="bold">{rmse:.4f}</text>
-        
-        <rect x="20" y="175" width="400" height="15" fill="#020805" rx="3" stroke="#1A3326" />
-        <rect x="20" y="175" width="{int(min(rmse * 400, 400))}" height="15" fill="#f6ad55" rx="3" />
-        
-        <!-- Metric 3: Train / Test Split -->
-        <text x="20" y="225" fill="#E2E8F0" font-size="12">Data Split Layout (Train vs Test):</text>
-        <text x="440" y="225" fill="#319795" font-size="12">{split_ratio*100:.0f}% / {(1 - split_ratio)*100:.0f}%</text>
-        
-        <g>
-            <rect x="20" y="235" width="{train_width}" height="15" fill="#319795" rx="3" />
-            <rect x="{20 + train_width}" y="235" width="{test_width}" height="15" fill="#1A3326" rx="3" />
-        </g>
-        
-        <!-- Footer timestamp -->
-        <text x="20" y="280" fill="#718096" font-size="9">Rendered: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC')}</text>
-        <text x="480" y="280" fill="#00E676" font-size="9" font-weight="bold">🛡️ ZERO TRUST CHANNEL</text>
-    </svg>"""
-    return svg
+    # Test Split
+    fig.add_trace(go.Bar(
+        y=["Data Split "],
+        x=[1 - split_ratio],
+        orientation='h',
+        marker=dict(color="#1A3326"),
+        text=[f"Test: {(1-split_ratio)*100:.0f}%"],
+        textposition="auto"
+    ))
+
+    fig.update_layout(
+        barmode='stack',
+        template="plotly_dark",
+        paper_bgcolor="#0D1B13",
+        plot_bgcolor="#0D1B13",
+        font=dict(family="'JetBrains Mono', monospace", color="#E2E8F0"),
+        title=dict(
+            text=f"[ ReadyNest Engine Telemetry ]<br><span style='font-size:11px;color:#718096'>Model: {model_name} (Training Size: {rows_scraped} rows)</span>", 
+            font=dict(color="#00E676", size=14)
+        ),
+        width=600,
+        height=300,
+        margin=dict(l=100, r=40, t=70, b=40),
+        showlegend=False,
+        xaxis=dict(range=[0, 1], showgrid=True, gridcolor='#1A3326', zeroline=False),
+        yaxis=dict(showgrid=False, zeroline=False)
+    )
+
+    return fig.to_image(format="svg").decode("utf-8")
 
 @router.get("/charts")
 def get_run_metrics_chart(

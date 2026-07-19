@@ -43,6 +43,17 @@ export default function SystemAdminDeck() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
+  const [tasks, setTasks] = useState([
+    { id: 1, text: "Verify SOC2 Type II audit reports", completed: true },
+    { id: 2, text: "Rotate scraper proxy AES keys", completed: false },
+    { id: 3, text: "Check database index fragmentation", completed: false },
+    { id: 4, text: "Audit Globex Corp RLS connection counts", completed: false }
+  ]);
+  const [approvals, setApprovals] = useState([
+    { id: 1, tenant: "Globex Corp", request: "Extend Token Limits to 90 Days", requester: "admin_globex" },
+    { id: 2, tenant: "Acme Corp", request: "Scale Celery Workers to 8 Nodes", requester: "analyst_acme" }
+  ]);
 
   // Reveal Key Verification Challenge States
   const [showChallenge, setShowChallenge] = useState(false);
@@ -223,10 +234,18 @@ export default function SystemAdminDeck() {
         </div>
       )}
 
-      {/* ── Screen 3: High-Density 12-Card KPI Grid ────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
+      {/* Action Notification Banner */}
+      {actionSuccess && (
+        <div className="terminal-panel fade-in" style={{ borderColor: "var(--accent-neon)", padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "rgba(0, 230, 118, 0.05)" }}>
+          <span style={{ fontSize: "12px", color: "var(--accent-neon)", fontFamily: "var(--font-mono)" }}>✓ {actionSuccess}</span>
+          <button onClick={() => setActionSuccess("")} style={{ border: "none", background: "none", color: "var(--text-muted)", cursor: "pointer", fontFamily: "var(--font-mono)" }}>[Dismiss]</button>
+        </div>
+      )}
+
+      {/* ── Screen 2: High-Density 12-Card KPI Grid ────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "16px" }}>
         
-        {/* KPI 1 */}
+        {/* KPI 1: Tenants */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -239,7 +258,7 @@ export default function SystemAdminDeck() {
           <span style={{ fontSize: "20px" }}>🏢</span>
         </div>
 
-        {/* KPI 2 */}
+        {/* KPI 2: Audit Logs */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -252,7 +271,7 @@ export default function SystemAdminDeck() {
           <span style={{ fontSize: "20px" }}>⚡</span>
         </div>
 
-        {/* KPI 3 */}
+        {/* KPI 3: Postgres Connection */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -265,7 +284,7 @@ export default function SystemAdminDeck() {
           <span style={{ fontSize: "20px" }}>☁️</span>
         </div>
 
-        {/* KPI 4 */}
+        {/* KPI 4: CPU Core Load */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -278,7 +297,7 @@ export default function SystemAdminDeck() {
           <span style={{ fontSize: "20px" }}>⚙️</span>
         </div>
 
-        {/* KPI 5 */}
+        {/* KPI 5: RAM Footprint */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -291,7 +310,7 @@ export default function SystemAdminDeck() {
           <span style={{ fontSize: "20px" }}>📟</span>
         </div>
 
-        {/* KPI 6 */}
+        {/* KPI 6: Redis Queue */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -304,7 +323,7 @@ export default function SystemAdminDeck() {
           <span style={{ fontSize: "20px" }}>📋</span>
         </div>
 
-        {/* KPI 7 */}
+        {/* KPI 7: Peak Scrape Rate */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -317,7 +336,7 @@ export default function SystemAdminDeck() {
           <span style={{ fontSize: "20px" }}>🌐</span>
         </div>
 
-        {/* KPI 8 */}
+        {/* KPI 8: SSL Expiry */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -330,7 +349,7 @@ export default function SystemAdminDeck() {
           <span style={{ fontSize: "20px" }}>🔑</span>
         </div>
 
-        {/* KPI 9 */}
+        {/* KPI 9: RLS Violations */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -343,7 +362,7 @@ export default function SystemAdminDeck() {
           <span style={{ fontSize: "20px" }}>🛡️</span>
         </div>
 
-        {/* KPI 10 */}
+        {/* KPI 10: AES-GCM latency */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -356,7 +375,7 @@ export default function SystemAdminDeck() {
           <span style={{ fontSize: "20px" }}>⚡</span>
         </div>
 
-        {/* KPI 11 */}
+        {/* KPI 11: Celery Workers */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -369,7 +388,7 @@ export default function SystemAdminDeck() {
           <span style={{ fontSize: "20px" }}>📦</span>
         </div>
 
-        {/* KPI 12 */}
+        {/* KPI 12: Dataset Cache */}
         <div className="terminal-panel" style={{ padding: "16px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", fontFamily: "var(--font-mono)" }}>
@@ -384,12 +403,60 @@ export default function SystemAdminDeck() {
 
       </div>
 
+      {/* Executive Command Grid (ARR, MRR, Licences) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "16px" }}>
+        <div className="terminal-panel" style={{ padding: "16px", borderLeft: "3px solid var(--accent-neon)" }}>
+          <span style={{ fontSize: "10px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>ANNUAL RECURRING REVENUE (ARR)</span>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginTop: "4px" }}>
+            <h3 style={{ fontSize: "24px", fontWeight: "bold", color: "var(--text-primary)" }}>$1,245,600</h3>
+            <span style={{ fontSize: "11px", color: "var(--accent-neon)", fontWeight: "bold" }}>+18.2% YoY</span>
+          </div>
+        </div>
+        
+        <div className="terminal-panel" style={{ padding: "16px", borderLeft: "3px solid var(--accent-teal)" }}>
+          <span style={{ fontSize: "10px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>MONTHLY COST ALLOCATIONS</span>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginTop: "4px" }}>
+            <h3 style={{ fontSize: "24px", fontWeight: "bold", color: "var(--text-primary)" }}>$12,840</h3>
+            <span style={{ fontSize: "11px", color: "var(--accent-teal)", fontWeight: "bold" }}>-2.4% Budget</span>
+          </div>
+        </div>
+
+        <div className="terminal-panel" style={{ padding: "16px", borderLeft: "3px solid #319795" }}>
+          <span style={{ fontSize: "10px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>ACTIVE USER SEATS</span>
+          <div style={{ display: "flex", alignItems: "baseline", gap: "10px", marginTop: "4px" }}>
+            <h3 style={{ fontSize: "24px", fontWeight: "bold", color: "var(--text-primary)" }}>142 / 500</h3>
+            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>Seats Filled</span>
+          </div>
+        </div>
+      </div>
+
       {/* Main Grid: Control center split */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }} className="split-view-container">
         
-        {/* Left column: Onboarding & Inventory */}
+        {/* Left column: Onboarding, Inventory, Task list, Approvals */}
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
+          {/* Quick Actions Toolbar */}
+          <div className="terminal-panel">
+            <h3 style={{ fontSize: "13px", textTransform: "uppercase", color: "var(--accent-neon)", marginBottom: "12px", fontFamily: "var(--font-mono)" }}>
+              [▶] System Administrative Quick Actions
+            </h3>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+              <button onClick={() => setActionSuccess("Purged Redis transaction brokers memory buffers.")} className="glow-button" style={{ padding: "8px", fontSize: "11px" }}>
+                🧹 Flush Redis Cache
+              </button>
+              <button onClick={() => setActionSuccess("Triggered zero-trust secret key rotation protocol.")} className="glow-button" style={{ padding: "8px", fontSize: "11px" }}>
+                🔑 Rotate Security Keys
+              </button>
+              <button onClick={() => setActionSuccess("Completed system-wide checks: 0 warnings.")} className="secondary-button" style={{ padding: "8px", fontSize: "11px" }}>
+                ⚙️ Run Core Diagnostics
+              </button>
+              <button onClick={() => setActionSuccess("Optimized SQLAlchemy indexes for target RLS tables.")} className="secondary-button" style={{ padding: "8px", fontSize: "11px" }}>
+                📈 Optimize RLS Indexes
+              </button>
+            </div>
+          </div>
+
           {/* Onboarding block form */}
           <div className="terminal-panel" id="onboard-panel">
             <h3 style={{
@@ -401,21 +468,6 @@ export default function SystemAdminDeck() {
             }}>
               [+] Onboard Corporate Tenant Segment
             </h3>
-
-            {success && (
-              <div style={{
-                backgroundColor: "rgba(0, 230, 118, 0.08)",
-                border: "1px solid var(--accent-neon)",
-                borderRadius: "4px",
-                padding: "10px",
-                fontSize: "12px",
-                color: "var(--accent-neon)",
-                fontFamily: "var(--font-mono)",
-                marginBottom: "16px"
-              }}>
-                ✓ {success}
-              </div>
-            )}
 
             <form onSubmit={handleOnboardTenant} style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
@@ -467,8 +519,8 @@ export default function SystemAdminDeck() {
             </form>
           </div>
 
-          {/* Tenants inventory table & empty state logic */}
-          <div className="terminal-panel" style={{ flex: 1 }}>
+          {/* Tenants inventory table */}
+          <div className="terminal-panel">
             <h3 style={{
               fontSize: "14px",
               textTransform: "uppercase",
@@ -542,36 +594,116 @@ export default function SystemAdminDeck() {
             )}
           </div>
 
-          {/* Connected Apps & Integrations */}
+          {/* Pending Approvals Queue */}
           <div className="terminal-panel">
             <h3 style={{ fontSize: "14px", textTransform: "uppercase", color: "var(--accent-teal)", marginBottom: "16px" }}>
-              [🔌] Integration Dependencies
+              [⏳] Administrative Approval Queue
             </h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-              <div className="terminal-panel" style={{ padding: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "11px", color: "var(--text-primary)" }}>Neon Database</span>
-                <span className="badge badge-success" style={{ fontSize: "9px" }}>CONNECTED</span>
+            {approvals.length === 0 ? (
+              <p style={{ fontSize: "12px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>No approvals pending in validation stack.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {approvals.map((req) => (
+                  <div key={req.id} style={{ border: "1px solid var(--border-green)", padding: "10px", borderRadius: "4px", backgroundColor: "#020805", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontSize: "11px", fontWeight: "bold" }}>{req.tenant} — {req.request}</div>
+                      <span style={{ fontSize: "9px", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>Requested by: {req.requester}</span>
+                    </div>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      <button onClick={() => { setApprovals((prev) => prev.filter(r => r.id !== req.id)); setActionSuccess("Request Approved."); }} className="glow-button" style={{ padding: "4px 8px", fontSize: "10px" }}>Approve</button>
+                      <button onClick={() => { setApprovals((prev) => prev.filter(r => r.id !== req.id)); setActionSuccess("Request Rejected."); }} className="secondary-button" style={{ padding: "4px 8px", fontSize: "10px", borderColor: "#e53e3e", color: "#e53e3e" }}>Deny</button>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="terminal-panel" style={{ padding: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "11px", color: "var(--text-primary)" }}>Redis Broker</span>
-                <span className="badge badge-success" style={{ fontSize: "9px" }}>CONNECTED</span>
-              </div>
-              <div className="terminal-panel" style={{ padding: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "11px", color: "var(--text-primary)" }}>Celery Workers</span>
-                <span className="badge badge-success" style={{ fontSize: "9px" }}>4 RUNNING</span>
-              </div>
-              <div className="terminal-panel" style={{ padding: "10px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: "11px", color: "var(--text-primary)" }}>FastAPI API</span>
-                <span className="badge badge-success" style={{ fontSize: "9px" }}>ONLINE</span>
-              </div>
+            )}
+          </div>
+
+          {/* Administrative Tasks list */}
+          <div className="terminal-panel">
+            <h3 style={{ fontSize: "14px", textTransform: "uppercase", color: "var(--accent-teal)", marginBottom: "16px" }}>
+              [📋] Administrative Checklist Tasks
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {tasks.map((task) => (
+                <label key={task.id} style={{ display: "flex", alignItems: "center", gap: "10px", fontSize: "12px", fontFamily: "var(--font-mono)", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={task.completed}
+                    onChange={(e) => {
+                      setTasks((prev) => prev.map(t => t.id === task.id ? { ...t, completed: e.target.checked } : t));
+                    }}
+                    style={{ accentColor: "var(--accent-neon)" }}
+                  />
+                  <span style={{ textDecoration: task.completed ? "line-through" : "none", color: task.completed ? "var(--text-muted)" : "var(--text-primary)" }}>
+                    {task.text}
+                  </span>
+                </label>
+              ))}
             </div>
           </div>
 
         </div>
 
-        {/* Right column: global security keys & audit events log */}
+        {/* Right column: global security keys, active logins, audit events log, resource monitoring, calendar */}
         <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
           
+          {/* Infrastructure Health & Resource Monitoring */}
+          <div className="terminal-panel">
+            <h3 style={{ fontSize: "14px", textTransform: "uppercase", color: "var(--accent-neon)", marginBottom: "16px" }}>
+              [⚙️] Server Infrastructure Monitoring
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontFamily: "var(--font-mono)", marginBottom: "3px" }}>
+                  <span>PostgreSQL Object Storage</span>
+                  <span>42.1 GB / 100 GB</span>
+                </div>
+                <div style={{ width: "100%", height: "8px", backgroundColor: "#020805", borderRadius: "4px", border: "1px solid var(--border-green)", overflow: "hidden" }}>
+                  <div style={{ width: "42.1%", height: "100%", backgroundColor: "var(--accent-teal)" }}></div>
+                </div>
+              </div>
+              
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "11px", fontFamily: "var(--font-mono)", marginBottom: "3px" }}>
+                  <span>Database Transactions Buffer</span>
+                  <span>14.2%</span>
+                </div>
+                <div style={{ width: "100%", height: "8px", backgroundColor: "#020805", borderRadius: "4px", border: "1px solid var(--border-green)", overflow: "hidden" }}>
+                  <div style={{ width: "14.2%", height: "100%", backgroundColor: "var(--accent-neon)" }}></div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", fontSize: "10px", fontFamily: "var(--font-mono)" }}>
+                <div><span style={{ color: "var(--text-muted)" }}>CELERY BACKLOG:</span> 0 queued</div>
+                <div><span style={{ color: "var(--text-muted)" }}>BROKER LOAD:</span> Nominal</div>
+                <div><span style={{ color: "var(--text-muted)" }}>DISK STATUS:</span> RAID-10 Active</div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI Automated Recommendation Engine */}
+          <div className="terminal-panel" style={{ border: "1px solid var(--accent-neon)", backgroundColor: "#020805" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
+              <span style={{ width: "6px", height: "6px", borderRadius: "50%", backgroundColor: "var(--accent-neon)" }}></span>
+              <span style={{ fontSize: "11px", color: "var(--accent-neon)", fontFamily: "var(--font-mono)", fontWeight: "bold" }}>[READYNEST_AI_ADVISORY]</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div style={{ padding: "8px", border: "1px solid var(--border-green)", borderRadius: "4px", backgroundColor: "rgba(0, 230, 118, 0.02)" }}>
+                <span style={{ fontSize: "10px", color: "var(--accent-neon)", fontFamily: "var(--font-mono)", fontWeight: "bold" }}>● INDEX CONGESTION WARN</span>
+                <p style={{ fontSize: "11px", color: "var(--text-primary)", marginTop: "2px" }}>
+                  Optimize compound key query execution path. Re-index target: <code>idx_users_tenant_username</code>. Potential savings: 12% database read latency.
+                </p>
+              </div>
+              <div style={{ padding: "8px", border: "1px solid var(--border-green)", borderRadius: "4px", backgroundColor: "rgba(0, 230, 118, 0.02)" }}>
+                <span style={{ fontSize: "10px", color: "var(--accent-teal)", fontFamily: "var(--font-mono)", fontWeight: "bold" }}>● CACHE HIT OPTIMAL</span>
+                <p style={{ fontSize: "11px", color: "var(--text-primary)", marginTop: "2px" }}>
+                  Redis transaction broker registers 99.85% cache hit distribution over active scraper queue instances. No scaling adjustments required.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Global Security Keys Module */}
           <div className="terminal-panel">
             <h3 style={{
@@ -627,6 +759,23 @@ export default function SystemAdminDeck() {
                     Reveal Key
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* System Maintenance Calendar Timeline */}
+          <div className="terminal-panel">
+            <h3 style={{ fontSize: "14px", textTransform: "uppercase", color: "var(--accent-teal)", marginBottom: "12px" }}>
+              [📅] System Maintenance & Events
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontFamily: "var(--font-mono)", fontSize: "11px" }}>
+              <div style={{ borderLeft: "2px solid var(--accent-neon)", paddingLeft: "8px" }}>
+                <span style={{ color: "var(--text-muted)" }}>JULY 18, 04:00 UTC</span>
+                <p style={{ color: "var(--text-primary)" }}>Backup rotation snapshot block</p>
+              </div>
+              <div style={{ borderLeft: "2px solid var(--accent-teal)", paddingLeft: "8px" }}>
+                <span style={{ color: "var(--text-muted)" }}>JULY 22, 12:00 UTC</span>
+                <p style={{ color: "var(--text-primary)" }}>Celery scraper pool scheduled updates</p>
               </div>
             </div>
           </div>

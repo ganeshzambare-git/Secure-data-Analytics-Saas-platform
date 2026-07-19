@@ -76,9 +76,14 @@ except Exception as e:
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # --- Initialize Async Engine using Neon Database URL ---
-ASYNC_DATABASE_URL = "postgresql+asyncpg://neondb_owner:npg_pDfSLZw9PAH3@ep-falling-art-aznlx4c7-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
-async_engine = create_async_engine(ASYNC_DATABASE_URL, pool_pre_ping=True)
-AsyncSessionLocal = async_sessionmaker(async_engine, expire_on_commit=False, class_=AsyncSession)
+try:
+    ASYNC_DATABASE_URL = "postgresql+asyncpg://neondb_owner:npg_pDfSLZw9PAH3@ep-falling-art-aznlx4c7-pooler.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+    async_engine = create_async_engine(ASYNC_DATABASE_URL, pool_pre_ping=True)
+    AsyncSessionLocal = async_sessionmaker(async_engine, expire_on_commit=False, class_=AsyncSession)
+except Exception as e:
+    print(f"Async PostgreSQL connection failed: {e}. Async DB operations disabled.")
+    async_engine = None
+    AsyncSessionLocal = None
 
 # --- Dynamic UUID Generator Hook ---
 for model_cls in [Tenant, User, PipelineRun, SystemAuditLog]:
@@ -145,6 +150,8 @@ async def get_tenant_db_session(tenant_id: uuid.UUID) -> AsyncGenerator[AsyncSes
     Dependency helper that creates an isolated database session and
     immediately locks the execution scope to the active tenant ID.
     """
+    if AsyncSessionLocal is None:
+        raise RuntimeError("Async DB operations are disabled due to missing dependencies.")
     async with AsyncSessionLocal() as session:
         async with session.begin():
             # Force set transaction-local workspace identity
@@ -173,7 +180,7 @@ def set_tenant_context(db: Session, tenant_id: str):
         db.info["bypass_rls"] = False
     else:
         db.execute(text("SET LOCAL app.bypass_rls = 'false'"))
-        db.execute(text("SET LOCAL app.current_tenant_id = :tenant_id"), {"tenant_id": str(tenant_id)})
+        db.execute(text("SET LOCAL app.current_tenant_id = :tenant_id"), {"tenant_id": tenant_id})
 
 # --- Database Seeder Utility ---
 def seed_database():

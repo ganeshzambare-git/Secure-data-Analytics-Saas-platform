@@ -20,10 +20,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
 
-  // Route guarding: check session status
+  // Route guarding & redirection to new workspace
   useEffect(() => {
-    if (!loading && !auth.token) {
-      router.push("/");
+    if (!loading) {
+      if (!auth.token) {
+        router.push("/");
+      } else {
+        router.push("/workspace/datasets");
+      }
     }
   }, [auth.token, loading, router]);
 

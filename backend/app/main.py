@@ -46,7 +46,7 @@ async def add_security_headers(request: Request, call_next):
         "script-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com; "
-        "connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 ws://localhost:* ws://127.0.0.1:*;"
+        "connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 ws://localhost:* ws://127.0.0.1:* https://*.vercel.app;"
     )
     return response
 
