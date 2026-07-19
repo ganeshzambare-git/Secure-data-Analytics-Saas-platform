@@ -1,0 +1,315 @@
+# Instincts generated from https://github.com/ganeshzambare-git/Secure-data-Analytics-Saas-platform
+# Generated: 2026-07-19T16:02:50.317Z
+# Version: 2.0
+# NOTE: This file supplements (does not replace) any existing curated instincts.
+# High-confidence manually curated instincts should be preserved alongside these.
+
+---
+id: Secure-data-Analytics-Saas-platform-commit-length
+trigger: "when writing a commit message"
+confidence: 0.6
+domain: git
+source: repo-analysis
+source_repo: https://github.com/ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Commit Length
+
+## Action
+
+Write moderate-length commit messages (~75 characters)
+
+## Evidence
+
+- Average commit message length: 75 chars
+- Based on 1 commits
+
+---
+id: Secure-data-Analytics-Saas-platform-naming-files
+trigger: "when creating a new file"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Naming Files
+
+## Action
+
+Use camelCase naming convention
+
+## Evidence
+
+- Analyzed file naming patterns in repository
+- Dominant pattern: camelCase
+
+---
+id: Secure-data-Analytics-Saas-platform-export-style
+trigger: "when exporting from a module"
+confidence: 0.7
+domain: code-style
+source: repo-analysis
+source_repo: https://github.com/ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Export Style
+
+## Action
+
+Prefer mixed exports
+
+## Evidence
+
+- Export pattern analysis
+- Dominant style: mixed
+
+---
+id: Secure-data-Analytics-Saas-platform-test-separate
+trigger: "when writing tests"
+confidence: 0.8
+domain: testing
+source: repo-analysis
+source_repo: https://github.com/ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Test Separate
+
+## Action
+
+Place tests in the tests/ or __tests__/ directory, mirroring src structure
+
+## Evidence
+
+- Separate test directory pattern detected
+- Tests live in dedicated test folders
+
+---
+id: secure-data-analytics-saas-platform-instinct-file-naming
+trigger: "When creating a new file"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct File Naming
+
+## Action
+
+Name the file using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.files
+
+---
+id: secure-data-analytics-saas-platform-instinct-function-naming
+trigger: "When defining a function"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct Function Naming
+
+## Action
+
+Name the function using camelCase
+
+## Evidence
+
+- Pattern in namingConventions.functions
+
+---
+id: secure-data-analytics-saas-platform-instinct-class-naming
+trigger: "When defining a class"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct Class Naming
+
+## Action
+
+Name the class using PascalCase
+
+## Evidence
+
+- Pattern in namingConventions.classes
+
+---
+id: secure-data-analytics-saas-platform-instinct-constant-naming
+trigger: "When declaring a constant"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct Constant Naming
+
+## Action
+
+Name the constant using SCREAMING_SNAKE_CASE
+
+## Evidence
+
+- Pattern in namingConventions.constants
+
+---
+id: secure-data-analytics-saas-platform-instinct-import-style
+trigger: "When importing modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct Import Style
+
+## Action
+
+Use either default or named imports as appropriate (mixed style)
+
+## Evidence
+
+- Pattern in importStyle: mixed
+
+---
+id: secure-data-analytics-saas-platform-instinct-export-style
+trigger: "When exporting modules"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct Export Style
+
+## Action
+
+Use either default or named exports as appropriate (mixed style)
+
+## Evidence
+
+- Pattern in exportStyle: mixed
+
+---
+id: secure-data-analytics-saas-platform-instinct-try-catch-error-handling
+trigger: "When handling errors in code"
+confidence: 0.9
+domain: code-style
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct Try Catch Error Handling
+
+## Action
+
+Use try-catch blocks for error handling
+
+## Evidence
+
+- Pattern in errorHandling.style: try-catch
+
+---
+id: secure-data-analytics-saas-platform-instinct-custom-error-classes
+trigger: "When defining error classes"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct Custom Error Classes
+
+## Action
+
+Do not use custom error classes
+
+## Evidence
+
+- Pattern in errorHandling.customErrorClasses: false
+
+---
+id: secure-data-analytics-saas-platform-instinct-error-boundaries
+trigger: "When implementing error boundaries in frontend code"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct Error Boundaries
+
+## Action
+
+Do not use error boundaries
+
+## Evidence
+
+- Pattern in errorHandling.errorBoundaries: false
+
+---
+id: secure-data-analytics-saas-platform-instinct-global-error-handler
+trigger: "When considering a global error handler"
+confidence: 0.8
+domain: code-style
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct Global Error Handler
+
+## Action
+
+Do not implement a global error handler
+
+## Evidence
+
+- Pattern in errorHandling.globalHandler: false
+
+---
+id: secure-data-analytics-saas-platform-instinct-commit-format
+trigger: "When writing a commit message"
+confidence: 0.8
+domain: git
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct Commit Format
+
+## Action
+
+Write a freeform commit message without a specific prefix, averaging around 75 characters
+
+## Evidence
+
+- Pattern in commits.type: freeform
+- Pattern in commits.averageLength: 75
+
+---
+id: secure-data-analytics-saas-platform-instinct-test-location
+trigger: "When adding new tests"
+confidence: 0.9
+domain: testing
+source: repo-analysis
+source_repo: ganeshzambare-git/Secure-data-Analytics-Saas-platform
+---
+
+# Secure Data Analytics Saas Platform Instinct Test Location
+
+## Action
+
+Place test files in a separate folder from source code
+
+## Evidence
+
+- Pattern in architecture.folderStructure.testLocation: separate
+
