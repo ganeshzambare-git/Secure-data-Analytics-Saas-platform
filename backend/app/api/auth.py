@@ -15,6 +15,7 @@ POST /api/v1/auth/token
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from pydantic import BaseModel, Field
 
 from app.core.db import get_db, set_tenant_context
@@ -61,9 +62,10 @@ def resolve_tenant(payload: TenantResolveRequest, db: Session = Depends(get_db))
     Looks up the tenants table by company_name (case-insensitive).
     Returns HTTP 404 if the workspace is not registered or inactive.
     """
+    org_name_normalized = payload.organization_name.replace(" ", "").lower()
     tenant = (
         db.query(Tenant)
-        .filter(Tenant.company_name.ilike(payload.organization_name))
+        .filter(func.lower(func.replace(Tenant.company_name, ' ', '')) == org_name_normalized)
         .first()
     )
 

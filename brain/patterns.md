@@ -87,9 +87,11 @@ Resolve SQLite GUID mismatch when querying UUID column definitions:
 3. Instead, cast the database column to String using `cast(column, String)` and strip all hyphens using `func.replace(..., "-", "")`.
 4. Perform the same cleaning on the python search parameter: `str(param).replace("-", "")`.
 5. The resulting expression works regardless of column layout schemas:
-   `func.replace(cast(column, String), "-", "") == str(param).replace("-", "")`
+    `func.replace(cast(column, String), "-", "") == str(param).replace("-", "")`
 
-
-
-
-
+## Local Workspace Tab Switching Pattern
+To unify multiple dashboard screens (e.g. Scraper Terminal, ML Workshop, Visual Insights Board) within a single Analyst Workspace page:
+1. Declare a state hook `activeWorkspaceTab` to track the visible view.
+2. Render a high-density, horizontal tab navigation bar above the cards layout using curated role-button styles.
+3. Conditionally render the workspace sections using short-circuit operators: `{activeWorkspaceTab === "workspace" && ...}`.
+4. Manage clean transitions, fullscreen toggle states, and tab-specific telemetry KPI arrays dynamically.
